@@ -19,4 +19,3 @@ def broadcast_ops(X: np.ndarray, b: np.ndarray, w: np.ndarray) -> np.ndarray:
     w=w.reshape(-1,1)
     return (X + b) * w
     #notes: the first argument in reshape is the row number and second one is column but a wildcard like -1 is used when you want numpy to automatically determine that dimension based on the other given dimensions.
-    pass
