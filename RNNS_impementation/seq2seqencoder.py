@@ -11,26 +11,27 @@ def seq2seq_encoder(x_seq, W_x, W_h, b, cell_type='rnn', bidirectional=False):
         - h_all: np.ndarray of shape (T, d_h) or (T, 2*d_h) if bidirectional
         - h_final: np.ndarray of shape (d_h,) or (2*d_h,) if bidirectional
     """
-    (T,d_h)=x_seq.shape
+    (T,d_x)=x_seq.shape
+    d_h=W_h.shape[0]
     if(bidirectional):
         if cell_type=='rnn': 
             h_fwd=np.zeros((T,d_h))
             h_prev=np.zeros(d_h)
             for t in range(T):
-                h_t=np.tanh(np.matmul(x_seq[t],W_x.T)+np.matmul(h_prev,W_h.T))
+                h_t=np.tanh(np.matmul(x_seq[t],W_x.T)+np.matmul(h_prev,W_h.T)+b)
                 h_fwd[t]=h_t
                 h_prev=h_t
             h_fwd_final=h_fwd[-1]
             h_bwd=np.zeros((T,d_h))
             h_prev=np.zeros(d_h)
             for t in reversed(range(T)):
-                h_t=np.tanh(np.matmul(x_seq[t],W_x.T)+np.matmul(h_prev,W_h.T))
+                h_t=np.tanh(np.matmul(x_seq[t],W_x.T)+np.matmul(h_prev,W_h.T)+b)
                 h_bwd[t]=h_t
                 h_prev=h_t
             h_bwd_final=h_bwd[0]
-            h_ans_all=np.concat(h_fwd,h_bwd,axis=1)
-            h_ans_final=np.concat(h_fwd_final,h_bwd_final,axis=1)
-            return (h_ans_all,h_ans_final)  
+            h_ans_all=np.concatenate((h_fwd,h_bwd),axis=1)
+            h_ans_final=np.concatenate((h_fwd_final,h_bwd_final),axis=1)
+            return (h_ans_all.astype(np.float32),h_ans_final.astype(np.float32))  
         if cell_type=='lstm':
             h_fwd=np.zeros((T,d_h))
             h_prev=np.zeros(d_h)
@@ -64,9 +65,9 @@ def seq2seq_encoder(x_seq, W_x, W_h, b, cell_type='rnn', bidirectional=False):
                 c_prev=c_t
                 h_prev=h_t
             h_bwd_final=h_bwd[0]
-            h_ans_all=np.concat(h_fwd,h_bwd,axis=1)
-            h_ans_final=np.concat(h_fwd_final,h_bwd_final,axis=1)
-            return(h_ans_all,h_ans_final)
+            h_ans_all=np.concatenate((h_fwd,h_bwd),axis=1)
+            h_ans_final=np.concatenate((h_fwd_final,h_bwd_final),axis=1)
+            return (h_ans_all.astype(np.float32),h_ans_final.astype(np.float32)) 
         if cell_type=='gru':
             h_fwd=np.zeros((T,d_h))
             h_prev=np.zeros(d_h)
@@ -90,9 +91,9 @@ def seq2seq_encoder(x_seq, W_x, W_h, b, cell_type='rnn', bidirectional=False):
                 h_t=(1-u_t)*h_hat+u_t*h_prev
                 h_bwd[t]=h_t
             h_bwd_final=h_bwd[0]
-            h_ans_all=np.concat(h_fwd,h_bwd,axis=1)
-            h_ans_final=np.concat(h_fwd_final,h_bwd_final,axis=1)
-            return(h_ans_all,h_ans_final)
+            h_ans_all=np.concatenate((h_fwd,h_bwd),axis=1)
+            h_ans_final=np.concatenate((h_fwd_final,h_bwd_final),axis=1)
+            return (h_ans_all.astype(np.float32),h_ans_final.astype(np.float32))
     else:
         if cell_type=='rnn':
         
@@ -100,12 +101,12 @@ def seq2seq_encoder(x_seq, W_x, W_h, b, cell_type='rnn', bidirectional=False):
             h_prev=np.zeros(d_h)
         
             for t in range(T):
-                h_t=np.tanh(np.matmul(x_seq[t],W_x.T)+np.matmul(h_prev,W_h.T))
+                h_t=np.tanh(np.matmul(x_seq[t],W_x.T)+np.matmul(h_prev,W_h.T)+b)
                 h_all[t]=h_t
                 h_prev=h_t
             
             h_final=h_all[-1]
-            return (h_all,h_final)
+            return (h_all.astype(np.float32),h_final.astype(np.float32))
         if cell_type=='lstm':
             h_all=np.array(np.zeroes((T,d_h)))
             h_prev=np.zeros(d_h)
@@ -123,7 +124,7 @@ def seq2seq_encoder(x_seq, W_x, W_h, b, cell_type='rnn', bidirectional=False):
                 c_prev=c_t
                 h_prev=h_t
             h_final=h_all[-1]
-            return (h_all,h_final)    
+            return (h_all.astype(np.float32),h_final.astype(np.float32))    
         if cell_type=='gru':
             h_all=np.array(np.zeroes((T,d_h)))
             h_prev=np.zeroes(d_h)
@@ -136,7 +137,7 @@ def seq2seq_encoder(x_seq, W_x, W_h, b, cell_type='rnn', bidirectional=False):
                 h_t=(1-u_t)*h_hat+u_t*h_prev
                 h_all[t]=h_t
             h_final=h_all[-1]
-            return (h_all,h_final)
+            return (h_all.astype(np.float32),h_final.astype(np.float32))
             
 
 
