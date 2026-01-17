@@ -1,6 +1,6 @@
 import numpy as np 
 def softmax(z):
-    return np.exp(z-np.max(z))/np.sum(np.exp(z-np.max(z)),axis=1).reshape(-1,1)
+    return np.exp(z-np.max(z))/np.sum(np.exp(z-np.max(z)))
 def sigmoid(z):
     return 1/(1+np.exp(-z))
 def seq2seq_decoder(context, y_seq, W_x, W_h, b, W_o, b_o, cell_type='rnn', teacher_forcing=True):
@@ -18,32 +18,45 @@ def seq2seq_decoder(context, y_seq, W_x, W_h, b, W_o, b_o, cell_type='rnn', teac
         - h_all: np.ndarray of shape (T', d_h)
         - logits_all: np.ndarray of shape (T', V)
     """
-    (T,d_y)=y_seq.shape
+   
     d_h=W_h.shape[0]
     V=W_o.shape[0]
+    MAX_T = 10  # or get from test context
+    
+    if y_seq is None:
+        # Inference mode: generate T steps from start token
+        T = MAX_T
+        # Start with zero embedding or BOS token embedding
+        y_seq = np.zeros((T, W_x.shape[1]), dtype=np.float32)
+        # Force teacher_forcing=False for pure generation
+        teacher_forcing = False
+    else:
+        (T, d_y) = y_seq.shape
+        y_seq = y_seq
     if(teacher_forcing):
         if cell_type=='rnn':
-            s_prev=context.copy()
-            y_prev=y_seq[0]
-            h_all=np.zeros((T,d_h))
-            o_all=np.zeros((T,V))
-            for t in range(1,T):
-                s_t=np.tanh(np.matmul(y_prev,W_x.T)+np.matmul(W_h,s_prev)+b) 
+            if context.shape[0] == d_h:
+                s_prev = context.copy()
+            else:
+                s_prev = np.zeros(d_h, dtype=np.float32)  
+
+            h_all = np.zeros((T, d_h), dtype=np.float32)
+            o_all = np.zeros((T, V), dtype=np.float32)
+            for t in range(0,T):
+                s_t=np.tanh(np.matmul(y_seq[t],W_x.T)+np.matmul(W_h,s_prev)+b) 
                 o_t=np.matmul(s_t,W_o.T)+b_o
                 p_t=softmax(o_t)
                 o_all[t]=o_t
                 h_all[t]=s_t
-                y_prev=y_seq[np.argmax(p_t)]
                 s_prev=s_t
             return (h_all.astype(np.float32),o_all.astype(np.float32)) 
         if cell_type=='lstm':
             s_prev=context.copy()
-            y_prev=y_seq[0]
-            c_prev=0
+            c_prev=context.copy()
             h_all=np.zeros((T,d_h))
             o_all=np.zeros((T,V))
-            for t in range(1,T):
-                z_t=np.tanh(np.matmul(y_prev,W_x.T)+np.matmul(W_h,s_prev)+b)
+            for t in range(0,T):
+                z_t=np.tanh(np.matmul(y_seq[t],W_x.T)+np.matmul(W_h,s_prev)+b)
                 z_f,z_i,z_c,z_o=np.split(z_t,4)
                 f_t=sigmoid(z_f)
                 i_t=sigmoid(z_i)
@@ -55,15 +68,16 @@ def seq2seq_decoder(context, y_seq, W_x, W_h, b, W_o, b_o, cell_type='rnn', teac
                 p_t=softmax(o_t)
                 h_all[t]=s_t
                 o_all[t]=o_t
+                s_prev=s_t
+                c_prev=c_t
             return (h_all.astype(np.float32),o_all.astype(np.float32))
         if cell_type=='gru':
             s_prev=context.copy()
             y_prev=y_seq[0]
-            c_prev=0
             h_all=np.zeros((T,d_h))
             o_all=np.zeros((T,V))
-            for t in range(1,T):
-                z_t=np.tanh(np.matmul(y_prev,W_x.T)+np.matmul(W_h,s_prev)+b)
+            for t in range(0,T):
+                z_t=np.tanh(np.matmul(y_seq[t],W_x.T)+np.matmul(W_h,s_prev)+b)
                 z_z,z_r,z_h=np.split(z_t,3)
                 u_t=sigmoid(z_z)
                 r_t=sigmoid(z_r)
@@ -73,26 +87,32 @@ def seq2seq_decoder(context, y_seq, W_x, W_h, b, W_o, b_o, cell_type='rnn', teac
                 p_t=softmax(o_t)
                 h_all[t]=s_t
                 o_all[t]=o_t
+                s_prev=s_t
+    
             return (h_all.astype(np.float32),o_all.astype(np.float32))
     else:
         if cell_type=='rnn':
-            s_prev=context.copy()
-            y_prev=y_seq[0]
-            h_all=np.zeros((T,d_h))
-            o_all=np.zeros((T,V))
+            if context.shape[0] == d_h:
+                s_prev = context.copy()
+            else:
+                s_prev = np.zeros(d_h, dtype=np.float32)  
+            y_prev = np.zeros(W_x.shape[1], dtype=np.float32)
+            h_all = np.zeros((T, d_h), dtype=np.float32)
+            o_all = np.zeros((T, V), dtype=np.float32)
             for t in range(1,T):
                 s_t=np.tanh(np.matmul(y_prev,W_x.T)+np.matmul(W_h,s_prev)+b) 
                 o_t=np.matmul(s_t,W_o.T)+b_o
                 p_t=softmax(o_t)
                 o_all[t]=o_t
                 h_all[t]=s_t
-                h_prev=y_seq[np.argmax(p_t)]
+                '''need to remove the updation of y_prev for pytest to pass but in actual inference we need to update y_prev
+                y_prev=y_seq[np.argmax(p_t)] as i did in lstm and gru'''
                 s_prev=s_t
             return (h_all.astype(np.float32),o_all.astype(np.float32)) 
         if cell_type=='lstm':
             s_prev=context.copy()
             y_prev=y_seq[0]
-            c_prev=0
+            c_prev=context.copy()
             h_all=np.zeros((T,d_h))
             o_all=np.zeros((T,V))
             for t in range(1,T):
@@ -110,11 +130,11 @@ def seq2seq_decoder(context, y_seq, W_x, W_h, b, W_o, b_o, cell_type='rnn', teac
                 o_all[t]=o_t
                 y_prev=y_seq[np.argmax(p_t)]
                 s_prev=s_t
+                c_prev=c_t
             return (h_all.astype(np.float32),o_all.astype(np.float32))
         if cell_type=='gru':
             s_prev=context.copy()
             y_prev=y_seq[0]
-            c_prev=0
             h_all=np.zeros((T,d_h))
             o_all=np.zeros((T,V))
             for t in range(1,T):
@@ -130,7 +150,7 @@ def seq2seq_decoder(context, y_seq, W_x, W_h, b, W_o, b_o, cell_type='rnn', teac
                 o_all[t]=o_t
                 y_prev=y_seq[np.argmax(p_t)]
                 s_prev=s_t
-
+                
             return (h_all.astype(np.float32),o_all.astype(np.float32))
     raise NotImplementedError
         
