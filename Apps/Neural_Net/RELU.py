@@ -6,5 +6,9 @@ class RELU:
     def parameters(self):
         return []
     def __call__(self,x):
+        self.x=x
         return np.where(x>0,x,0)
+    def backward(self,dout):
+        mask=self.x>0
+        return dout*mask
     
