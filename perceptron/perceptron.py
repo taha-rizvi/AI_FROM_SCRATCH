@@ -12,7 +12,7 @@ class perceptron:
         #     return 1
         # return -1
         return np.where(z>=0,1,-1) #did this avoid explicit for looping.
-
+    
     def train(self,X,y):
         m,n=X.shape
         self.w=np.random.randn(n)*0.01
