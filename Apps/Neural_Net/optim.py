@@ -8,7 +8,7 @@ class SGD:
             layer.bias-=self.lr*layer.db
     def zero_grad(self):
         for layer in self.params:
-            layer.weight=0
-            layer.bias=0
+            layer.dw*=0
+            layer.db*=0
         
 
