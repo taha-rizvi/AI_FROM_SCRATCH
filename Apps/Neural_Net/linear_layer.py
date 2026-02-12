@@ -1,7 +1,12 @@
 import numpy as np
+def kaiming_init(shape:tuple)->np.ndarray:
+    fan_in,fan_out=shape
+    std=np.sqrt(2.0/fan_in).astype(np.float64)
+    return np.random.normal(loc=0.0,scale=std,size=shape)
+
 class Linear:
     def __init__(self,input_size,output_size):
-        self.weight=np.random.randn(input_size,output_size)*0.01
+        self.weight=kaiming_init((input_size,output_size))
         self.bias=np.zeros((output_size))
     def __call__(self,X):
         self.X=X
