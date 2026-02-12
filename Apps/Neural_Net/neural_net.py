@@ -20,9 +20,10 @@ class NeuralNet(Module):
     
     def backward(self,dout):
         
-        l2_back=self.fc2.backward(dout) 
+        
+        l2_back=self.fc2.backward(dout)
         relu_back=self.RELU.backward(l2_back)
-        l1_back=self.fc1.backward(relu_back)
+        return self.fc1.backward(relu_back)
         
     
 
