@@ -8,3 +8,6 @@ class softmax:
         return self.output
     def backward(self,dout):
         return self.output*(dout-np.sum(dout*self.output,axis=1,keepdims=True))
+    
+
+   
