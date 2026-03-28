@@ -9,6 +9,7 @@ def im2col(x, kernel_size, stride=1, padding=0):
     padding: int or tuple of two ints (p_h, p_w)
     returns: np.ndarray of shape (C * K_h * K_w, N * H_out * W_out), dtype=np.float32
     """
+    #WARNING : PLEASE GO THROUGH THE THEORY BEHIND THIS OPERATION.
     N,C,H_in,W_in=x.shape
     if isinstance(kernel_size,tuple):
         K_h,K_w=kernel_size
@@ -35,7 +36,7 @@ def im2col(x, kernel_size, stride=1, padding=0):
                 start_w=j*s_w
                 end_h=start_h+K_h
                 end_w=start_w+K_w
-                patch=x_padded[n,:,start_h:end_h,start_w:end_w]
+                patch=x_padded[n,:,start_h:end_h,start_w:end_w]  #try to understand from here(you didn't got the column major and row major thing)
                 flat_patch = patch.transpose(0, 2, 1).reshape(-1)
                 col_ind=n*H_out*W_out+i*W_out+j
                 col_matrix[:,col_ind]=flat_patch
