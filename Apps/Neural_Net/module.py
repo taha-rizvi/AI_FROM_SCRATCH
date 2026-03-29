@@ -1,10 +1,9 @@
-from linear_layer import Linear
+from Apps.Neural_Net.linear_layer import Linear
 class Module:
     def __init__(self):
         self._submodules={}
     
     def __setattr__(self, name, value):
-        # ONLY call super() AFTER checking - avoid recursion!
         if hasattr(value, 'parameters') and callable(value.parameters):
             if not hasattr(self, '_submodules'):
                 self._submodules = {}
